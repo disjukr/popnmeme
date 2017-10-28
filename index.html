@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title></title>
+        <meta name="description" content="팝픈 짤방 생성기입니다">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <style>
+            @import url(//fonts.googleapis.com/earlyaccess/nanumpenscript.css);
+            @import url(//fonts.googleapis.com/earlyaccess/nanummyeongjo.css);
+            .normal { font-weight: 400; }
+            .bold { font-weight: 700; }
+            .serif { font-family: 'Nanum Myeongjo', serif; }
+            .cursive { font-family: 'Nanum Pen Script', cursive; }
+            .hidden {
+                opacity: 0;
+                position: absolute;
+                pointer-events: none;
+            }
+        </style>
+        <script src="//cdn.jsdelivr.net/gh/bramstein/fontfaceobserver@v2.0.13/fontfaceobserver.standalone.js"></script>
+    </head>
+    <body>
+        <div class="hidden">
+            <div class="normal serif">로드돼라</div>
+            <div class="bold serif">로드돼라</div>
+            <div class="normal cursive">로드돼라</div>
+            <div class="bold cursive">로드돼라</div>
+        </div>
+        <label>제목 <input id="title" type="text" value="할로윈에 모펀 대기 터진대!!"></label>
+        <label>미미냐미 <input type="text"></label>
+        <label>나비군 <input type="text"></label>
+        <canvas id="popnmeme" width="1132" height="604"></canvas>
+        <script>
+            /** @type {HTMLInputElement} */
+            const titleElement = document.getElementById('title');
+            /** @type {HTMLCanvasElement} */
+            const canvas = document.getElementById('popnmeme');
+            const context = canvas.getContext('2d');
+            async function main() {
+                console.log('loading fonts...');
+                try {
+                    await loadFonts([
+                        ['Nanum Myeongjo', { weight: 400 }],
+                        ['Nanum Myeongjo', { weight: 700 }],
+                        ['Nanum Pen Script', { weight: 400 }],
+                        ['Nanum Pen Script', { weight: 700 }],
+                    ]);
+                } catch (e) {
+                    console.error(e);
+                }
+                console.log('loading image...');
+                const img = await loadImage('./how_basic_04_waifu2x_art_noise0_scale_tta_1.png');
+                console.log('loaded!');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                function render() {
+                    context.save();
+                    context.drawImage(img, 0, 0);
+                    drawText(
+                        context,
+                        titleElement.value,
+                        {
+                            x: canvas.width / 2, y: 95,
+                            fontSize: 60, fontFamily: 'Nanum Myeongjo', fontWeight: 700,
+                            color: [[0.3, 'white'], [0.8, '#ffd207'], [1, '#fff8c7']],
+                            outlineWidth: 3, outlineColor: '#672f00',
+                        }
+                    );
+                    context.restore();
+                }
+                setInterval(render, 100);
+                render();
+            }
+            /**
+            @param {CanvasRenderingContext2D} context
+            @param {string} text
+            @param {{
+                x: number,
+                y: number,
+                fontSize: number,
+                fontFamily: string,
+                fontWeight: number,
+                outlineWidth?: number,
+                outlineColor?: string,
+                color: string | [number, string][],
+            }} options
+            */
+            function drawText(
+                context,
+                text,
+                options,
+            ) {
+                const {
+                    x, y,
+                    fontSize, fontFamily, fontWeight, color,
+                    outlineWidth, outlineColor,
+                } = options;
+                const font = `${ fontWeight } ${ fontSize }px "${ fontFamily }"`;
+                context.save();
+                context.font = font;
+                context.textAlign = 'center';
+                if (outlineWidth) {
+                    context.lineWidth = outlineWidth;
+                    context.strokeStyle = outlineColor;
+                    context.strokeText(text, x, y);
+                }
+                if (typeof color === 'string') {
+                    context.fillStyle = color;
+                } else {
+                    context.fillStyle = textVerticalGradient(context, y, fontSize, color);
+                }
+                context.fillText(text, x, y);
+                context.restore();
+            }
+            /**
+            @param {CanvasRenderingContext2D} context
+            @param {number} y
+            @param {number} fontSize
+            @param {[number, string][]} colorStops
+            @return {CanvasGradient}
+            */
+            function textVerticalGradient(context, y, fontSize, colorStops) {
+                const gradient = context.createLinearGradient(0, y - fontSize, 0, y);
+                for (const colorStop of colorStops) {
+                    gradient.addColorStop(...colorStop);
+                }
+                return gradient;
+            }
+            /**
+            @param {string} src
+            @return {Promise<HTMLImageElement>}
+            */
+            function loadImage(src) {
+                return new Promise(resolve => {
+                    const img = new Image();
+                    img.src = src;
+                    img.onload = () => resolve(img);
+                });
+            }
+            /**
+            @param {[string, { weight: number }][]} fonts
+            @return {Promise<void>}
+            */
+            function loadFonts(fonts) {
+                const observers = fonts.map(args => new FontFaceObserver(...args));
+                return Promise.all(observers.map(observer => observer.load()));
+            }
+            main().catch(err => console.error(err));
+        </script>
+    </body>
+</html>
